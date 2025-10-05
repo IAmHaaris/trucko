@@ -1,0 +1,30 @@
+{
+  "name": "household-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@gorhom/bottom-sheet": "^5.2.6",
+    "@react-navigation/bottom-tabs": "^7.4.7",
+    "@react-navigation/native": "^7.1.17",
+    "@react-navigation/native-stack": "^7.3.26",
+    "expo": "~54.0.12",
+    "expo-linear-gradient": "^15.0.7",
+    "expo-location": "^19.0.7",
+    "expo-status-bar": "~3.0.8",
+    "install": "^0.13.0",
+    "react": "19.1.0",
+    "react-native": "0.76.3",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-maps": "1.20.1",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "^5.6.1",
+    "react-native-worklets": "0.5.1"
+  },
+  "private": true
+}
