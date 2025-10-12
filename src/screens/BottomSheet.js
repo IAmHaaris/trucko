@@ -1,3 +1,4 @@
+// BottomSheet.js
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Dimensions,
@@ -7,40 +8,49 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
+  TextInput,
   Platform,
-  FlatList,
   ActivityIndicator,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import ProposalList from "./ProposalList";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;
 const MIN_TRANSLATE_Y = -SCREEN_HEIGHT * 0.4;
 
-const BottomSheet = () => {
+const BottomSheet = ({navigation}) => {
   const translateY = useSharedValue(0);
   const context = useSharedValue({ y: 0 });
-  const [currentState, setCurrentState] = useState('options'); // options → searching → result → callback
-  const [selectedOption, setSelectedOption] = useState('');
+  const [currentState, setCurrentState] = useState('options');
+  const [pickup, setPickup] = useState('Your Location');
+  const [destination, setDestination] = useState('');
+  const [loadAssistance, setLoadAssistance] = useState(false);
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState(null);
   const [acceptedDrivers, setAcceptedDrivers] = useState([]);
-
+  const [isSearching, setIsSearching] = useState(true);
+  const [confirmedDriver, setConfirmedDriver] = useState(null);
+  const proposals = [
+    { id: 1, name: "Arjun Mehta", photo: "https://i.pravatar.cc/300?img=1", rating: 4.9 },
+    { id: 2, name: "Rahul Singh", photo: "https://i.pravatar.cc/300?img=2", rating: 4.7 },
+    { id: 3, name: "Amit Kumar", photo: "https://i.pravatar.cc/300?img=3", rating: 4.8 },
+  ];
   const scrollTo = useCallback((destination) => {
     'worklet';
     translateY.value = withSpring(destination, { damping: 50 });
   }, []);
 
-  const mockPrices = { mini: 50, auto: 60, sedan: 100, bike: 30, premium: 150 };
   const mockDrivers = [
-    { id: 1, name: 'Joe Biden', vehicle: 'Honda City', rating: 4.94, image: require('../assets/s3.jpg') },
-    { id: 2, name: 'Elon Musk', vehicle: 'Tesla Model 3', rating: 4.87, image: require('../assets/s3.jpg') },
-    { id: 3, name: 'Bill Gates', vehicle: 'Toyota Corolla', rating: 4.8, image: require('../assets/s3.jpg') },
-    { id: 4, name: 'Mark Zuckerberg', vehicle: 'Honda Civic', rating: 4.9, image: require('../assets/s3.jpg') },
+    { id: 1, name: 'Joe Biden', vehicle: 'Tata Ace', rating: 4.94, image: require('../assets/s3.jpg') },
+    { id: 2, name: 'Elon Musk', vehicle: 'Mahindra Bolero', rating: 4.87, image: require('../assets/s3.jpg') },
+    { id: 3, name: 'Bill Gates', vehicle: 'Ashok Leyland', rating: 4.8, image: require('../assets/s3.jpg') },
   ];
 
-  // Gesture
   const gesture = Gesture.Pan()
     .onStart(() => { context.value = { y: translateY.value }; })
     .onUpdate((event) => { translateY.value = Math.max(event.translationY + context.value.y, MAX_TRANSLATE_Y); })
@@ -58,95 +68,126 @@ const BottomSheet = () => {
     return { borderRadius, transform: [{ translateY: translateY.value }] };
   });
 
-  const handleRequest = () => {
-    setCurrentState('searching');
-    setTimeout(() => {
-      setAcceptedDrivers(mockDrivers);
-      setCurrentState('result');
-    }, 5000);
-    setTimeout(() => {
-      setCurrentState('callback');
-    }, 2 * 60 * 1000);
+  const handleConfirmBooking = () => {
+    console.log('selectedOption')
+
+        // console.log(selectedOption)
+        navigation.navigate('List', { });
+  };
+
+  const handleAcceptDriver = (driver) => {
+    setSelectedDriver(driver);
+    setCurrentState('confirmed');
   };
 
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[styles.bottomSheetContainer, rBottomSheetStyle]}>
         <LinearGradient colors={['#8B4000', '#FFC000']} style={styles.gradient}>
-          <KeyboardAvoidingView style={styles.content} behavior={Platform.OS === 'ios' ? 'padding' : null}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <View style={styles.line} />
 
-            {/* OPTIONS */}
+            {/* OPTIONS FORM */}
             {currentState === 'options' && (
               <>
-                <Text style={styles.sectionTitle}>Select Vehicle</Text>
-                <FlatList
-                  data={[
-                    { type: 'mini', name: 'Rickshaw', eta: '4 mins', image: require('../assets/Rickshaw.png'), description: 'Affordable ride for short city trips' },
-                    { type: 'auto', name: 'Toto', eta: '5 mins', image: require('../assets/toto.png'), description: 'Eco-friendly electric three-wheeler' },
-                    { type: 'sedan', name: 'Auto', eta: '3 mins', image: require('../assets/auto.png'), description: 'Quick and cost-effective' },
-                    { type: 'bike', name: 'Bike', eta: '2 mins', image: require('../assets/bike.png'), description: 'Fastest ride for solo travellers' },
-                    { type: 'premium', name: 'Car', eta: '6 mins', image: require('../assets/auto.png'), description: 'Comfortable option for group rides' },
-                  ]}
-                  contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-                  keyExtractor={(item) => item.type}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity style={[styles.vehicleRow, selectedOption === item.type && styles.selectedVehicleRow]} onPress={() => { setSelectedOption(item.type); handleRequest(); }}>
-                      <View style={styles.vehicleImageSection}>
-                        <Image source={item.image} style={styles.vehicleImage} />
-                        <Text style={styles.etaText}>{item.eta}</Text>
-                      </View>
-                      <View style={styles.vehicleInfo}>
-                        <Text style={styles.vehicleName}>{item.name}</Text>
-                        <Text style={styles.vehicleDescription}>{item.description}</Text>
-                        <Text style={styles.priceText}>₹ {mockPrices[item.type]}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                  showsVerticalScrollIndicator={false}
+                <Text style={styles.sectionTitle}>Book a Truck</Text>
+                <TextInput
+                  style={styles.input}
+                  value={pickup}
+                  onChangeText={setPickup}
+                  placeholder="Pickup Location"
+                  placeholderTextColor="#aaa"
                 />
-                <TouchableOpacity style={styles.requestButton} onPress={handleRequest}>
-                  <Text style={styles.requestButtonText}>Request</Text>
+                <TextInput
+                  style={styles.input}
+                  value={destination}
+                  onChangeText={setDestination}
+                  placeholder="Destination"
+                  placeholderTextColor="#aaa"
+                />
+
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => setLoadAssistance(!loadAssistance)}
+                >
+                  <View style={[
+                    styles.checkboxBox,
+                    loadAssistance && styles.checkboxBoxChecked
+                  ]} />
+                  <Text style={styles.checkboxLabel}>Need load/unload assistance</Text>
+                </TouchableOpacity>
+
+
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePicker}>
+                  <Text style={styles.datePickerText}>Select Date: {date.toLocaleDateString()}</Text>
+                </TouchableOpacity>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={date}
+                    mode="date"
+                    display="default"
+                    onChange={(e, selectedDate) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) setDate(selectedDate);
+                    }}
+                  />
+                )}
+
+                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmBooking}>
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
                 </TouchableOpacity>
               </>
             )}
 
             {/* SEARCHING */}
             {currentState === 'searching' && (
-              <View style={styles.centeredContent}>
-                <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.searchingText}>Sending your request...</Text>
-              </View>
+              <ProposalList
+                proposals={proposals}
+                onAccept={(driver) => {
+                  setConfirmedDriver(driver);
+                  setIsSearching(false); // show confirmed view now
+                }}
+                onReject={(id) => console.log("Rejected:", id)}
+                onBack={() => setIsSearching(false)} // go back to map
+              />
             )}
+
 
             {/* RESULT */}
             {currentState === 'result' && (
-              <View style={{ paddingVertical: 20 }}>
-                <Text style={styles.confirmationText}>Drivers accepted your request:</Text>
-                <FlatList
-                  data={acceptedDrivers}
-                  horizontal
-                  keyExtractor={(item) => item.id.toString()}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: 16 }}
-                  renderItem={({ item }) => (
-                    <View style={styles.driverCard}>
-                      <Image source={item.image} style={styles.driverImage} />
-                      <Text style={styles.driverName}>{item.name}</Text>
-                      <Text style={styles.driverRating}>{item.rating}⭐</Text>
+              <>
+                <Text style={styles.sectionTitle}>Available Drivers</Text>
+                <ScrollView horizontal contentContainerStyle={styles.driverList}>
+                  {acceptedDrivers.map((driver) => (
+                    <View key={driver.id} style={styles.driverCard}>
+                      <Image source={driver.image} style={styles.driverImage} />
+                      <Text style={styles.driverName}>{driver.name}</Text>
+                      <Text style={styles.driverInfo}>{driver.vehicle}</Text>
+                      <Text style={styles.driverInfo}>⭐ {driver.rating}</Text>
+                      <View style={styles.actionRow}>
+                        <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptDriver(driver)}>
+                          <Text style={styles.btnText}>Accept</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  )}
-                />
-              </View>
+                  ))}
+                </ScrollView>
+              </>
             )}
 
-            {/* CALLBACK */}
-            {currentState === 'callback' && (
-              <View style={styles.centeredContent}>
-                <Text style={styles.searchingText}>You will get a call back from us shortly.</Text>
+            {/* CONFIRMED */}
+            {currentState === 'confirmed' && selectedDriver && (
+              <View style={styles.confirmedCard}>
+                <Text style={styles.sectionTitle}>Booking Confirmed</Text>
+                <Image source={selectedDriver.image} style={styles.driverImageLarge} />
+                <Text style={styles.driverName}>{selectedDriver.name}</Text>
+                <Text style={styles.driverInfo}>{selectedDriver.vehicle}</Text>
+                <Text style={styles.driverInfo}>ETA: 5 mins</Text>
+                <Text style={styles.driverInfo}>Date: {date.toLocaleDateString()}</Text>
               </View>
             )}
-          </KeyboardAvoidingView>
+          </ScrollView>
         </LinearGradient>
       </Animated.View>
     </GestureDetector>
@@ -154,29 +195,95 @@ const BottomSheet = () => {
 };
 
 const styles = StyleSheet.create({
-  bottomSheetContainer: { height: SCREEN_HEIGHT+25, width: '100%', position: 'absolute', top: SCREEN_HEIGHT, borderRadius: 25, elevation: 10, overflow: 'hidden' },
+  bottomSheetContainer: {
+    height: SCREEN_HEIGHT + 25,
+    width: '100%',
+    position: 'absolute',
+    top: SCREEN_HEIGHT,
+    borderRadius: 25,
+    elevation: 10,
+    overflow: 'hidden',
+  },
   gradient: { flex: 1, borderRadius: 25 },
   line: { width: 75, height: 4, backgroundColor: '#ccc', alignSelf: 'center', marginVertical: 15, borderRadius: 25 },
-  content: { flex: 1, padding: 0 },
-  requestButton: { backgroundColor: '#1F2937', padding: 15, borderRadius: 30, bottom: 120, alignSelf: 'center', width: '60%', alignItems: 'center' },
-  requestButtonText: { fontWeight: 'bold', color: 'white', fontSize: 16 },
+  content: { paddingBottom: 60, paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: 'white', marginVertical: 10, textAlign: 'center' },
+  input: {
+    backgroundColor: '#ffffff20',
+    color: 'white',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: 'white',
+    marginRight: 10,
+    borderRadius: 4,
+  },
+  checkboxBoxChecked: {
+    backgroundColor: 'white',
+  },
+  checkboxLabel: {
+    color: 'white',
+    fontSize: 14,
+  },
+
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  checkboxLabel: { color: 'white', marginLeft: 8 },
+  datePicker: {
+    backgroundColor: '#ffffff20',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  datePickerText: { color: 'white' },
+  confirmButton: {
+    backgroundColor: '#1F2937',
+    padding: 15,
+    borderRadius: 30,
+    alignSelf: 'center',
+    width: '60%',
+    alignItems: 'center',
+  },
+  confirmButtonText: { fontWeight: 'bold', color: 'white', fontSize: 16 },
+  centeredContent: { justifyContent: 'center', alignItems: 'center', flex: 1, paddingTop: 100 },
   searchingText: { color: 'white', fontSize: 18, marginTop: 20, textAlign: 'center' },
-  centeredContent: { justifyContent: 'center', alignItems: 'center' },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginTop: 15, marginBottom: 8, color: 'white' },
-  vehicleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, marginBottom: 12 },
-  selectedVehicleRow: { backgroundColor: '#333', borderColor: '#ED2939' },
-  vehicleImageSection: { alignItems: 'center', marginRight: 15, width: 60 },
-  vehicleImage: { width: 50, height: 50, resizeMode: 'contain' },
-  etaText: { fontSize: 12, color: 'white', marginTop: 4 },
-  vehicleInfo: { flex: 1 },
-  vehicleName: { fontSize: 16, fontWeight: '600', color: 'white' },
-  vehicleDescription: { fontSize: 14, color: 'white', marginTop: 5 },
-  priceText: { fontWeight: 'bold', color: 'white', fontSize: 16, marginTop: 5 },
-  confirmationText: { fontSize: 18, fontWeight: 'bold', color: 'white', marginBottom: 15, textAlign: 'center' },
-  driverCard: { width: 100, alignItems: 'center', marginRight: 15 },
-  driverImage: { width: 70, height: 70, borderRadius: 35, marginBottom: 5 },
-  driverName: { color: 'white', fontWeight: '600', textAlign: 'center' },
-  driverRating: { color: 'white', textAlign: 'center' },
+  driverList: { paddingVertical: 10 },
+  driverCard: {
+    backgroundColor: '#ffffff20',
+    borderRadius: 12,
+    padding: 10,
+    marginRight: 16,
+    alignItems: 'center',
+    width: 140,
+  },
+  driverImage: { width: 60, height: 60, borderRadius: 30, marginBottom: 8 },
+  driverImageLarge: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center', marginBottom: 10 },
+  driverName: { color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' },
+  driverInfo: { color: 'white', fontSize: 14, textAlign: 'center' },
+  actionRow: { flexDirection: 'row', marginTop: 10 },
+  acceptBtn: {
+    backgroundColor: '#1FAD66',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  btnText: { color: 'white', fontWeight: 'bold' },
+  confirmedCard: {
+    backgroundColor: '#ffffff20',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 20,
+  },
 });
 
 export default BottomSheet;

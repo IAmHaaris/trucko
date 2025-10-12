@@ -1,272 +1,162 @@
-import React, { useState } from "react";
-import {
-    View,
-    FlatList,
-    TouchableOpacity,
-    Image,
-    Text,
-    StyleSheet,
-    TextInput,
-    Modal,
-    ScrollView,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const services = [
-    { id: "1", name: "Truck", image: require("../../assets/plumb.jpg") },
-    { id: "2", name: "Container Truck", image: require("../../assets/elec.jpg") },
-    { id: "3", name: "Lorry", image: require("../../assets/paint.jpg") },
-    { id: "4", name: "Small Lorry", image: require("../../assets/carp.jpg") },
-    { id: "5", name: "Metador", image: require("../../assets/clean.jpg") },
-    { id: "6", name: "High Cube Containers", image: require("../../assets/ac.jpg") },
+const gridData = [
+    { id: '1', rightImage: require('./../assets/side1.jpg') },
+    { id: '5', rightImage: require('./../assets/s4.jpg') },
+    { id: '2', rightImage: require('./../assets/s5.jpg') },
+    { id: '3', rightImage: require('./../assets/s6.jpg') },
+    { id: '4', rightImage: require('./../assets/s7.jpg') },
 ];
 
-export default function HomeScreen({ navigation }) {
-    const insets = useSafeAreaInsets();
-    const [selectedService, setSelectedService] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [pickup, setPickup] = useState("");
-    const [drop, setDrop] = useState("");
-    const [date, setDate] = useState("");
-    const [truckSize, setTruckSize] = useState("");
+const GridItem = ({ rightImage, navih }) => {
+    return (
+        <TouchableOpacity onPress={() => navih.navigate("MapScreen", {
+            bookingDetails: {  },
+        })} style={styles.gridItem}>
+            <Image source={rightImage} style={styles.gridImage} />
+        </TouchableOpacity>
+    );
+};
 
-    const handleRequest = () => {
-        setModalVisible(false);
-        navigation.navigate("MapScreen", {
-            service: selectedService,
-            bookingDetails: { pickup, drop, date, truckSize },
-        });
-        setPickup("");
-        setDrop("");
-        setDate("");
-        setTruckSize("");
-    };
+const Test = ({ navigation, route }) => {
+    // console.log(route.params.userName)
+    // const namevalue = route.params.userName;
+    const [modalVisible, setModalVisible] = useState(false);
+    const [bookingDetails, setBookingDetails] = useState(null);
+
+    useEffect(() => {
+        if (route.params?.bookingConfirmed) {
+            setBookingDetails(route.params.bookingDetails);
+            // setModalVisible(true);
+        }
+    }, [route.params?.bookingConfirmed]);
 
     return (
-        <LinearGradient colors={["#8B4000", "#FFC000"]} style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.appTitle}>Trucko</Text>
-                <Text style={styles.tagline}>Heavy Duty help, anytime</Text>
+<LinearGradient colors={['#8B4000', '#FFC000']} style={styles.container}>
+            {/* User Info Section */}
+            <View style={styles.userInfo}>
+                <Text style={styles.greeting}>Hi Haaris,</Text>
+                <TouchableOpacity
+                    style={styles.profileButton}
+                    onPress={() => navigation.navigate('Account')}
+                >
+                    <Image source={require('./../assets/driver.jpg')} style={styles.userImage} />
+                </TouchableOpacity>
+            </View>
 
-                {/* Search */}
-                <View style={styles.searchBox}>
-                    <Ionicons name="search-outline" size={20} color="gray" />
-                    <TextInput
-                        placeholder="Search services..."
-                        placeholderTextColor="gray"
-                        style={styles.searchInput}
+            {/* Booking Question */}
+            <Text style={styles.bookingQuestion}>Which Heavy duty you want to book today?</Text>
+
+            {/* Scrollable Grid */}
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                {gridData.map(item => (
+                    <GridItem
+                        key={item.id}
+                        navih={navigation}
+                        rightImage={item.rightImage}
                     />
-                </View>
-            </View>
+                ))}
+            </ScrollView>
 
-            {/* Services */}
-            <View style={[styles.servicesContainer, { flex: 1 }]}>
-                <Text style={styles.sectionTitle}>Popular Services</Text>
-                <FlatList
-                    data={services}
-                    keyExtractor={(item) => item.id}
-                    numColumns={2}
-                    columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 15 }}
-                    contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.card}
-                            onPress={() => {
-                                setSelectedService(item);
-                                setModalVisible(true);
-                            }}
-                        >
-                            <Image source={item.image} style={styles.cardImageFull} />
-                            <View style={styles.overlay}>
-                                <Text style={styles.overlayText}>{item.name}</Text>
-                            </View>
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-
-            {/* Promo Banner */}
-            <View style={[styles.banner, { marginBottom: insets.bottom + 0 }]}>
-                <MaterialCommunityIcons name="sale" size={30} color="white" />
-                <Text style={styles.bannerText}>Flat 20% OFF on First Booking!</Text>
-            </View>
-
-            {/* Booking Modal */}
-            <Modal
-                visible={modalVisible}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <LinearGradient
-                            colors={["#8B4000", "#FFC000"]}
-                            style={styles.gradientButton}
-                        >
-                            <ScrollView showsVerticalScrollIndicator={false}>
-                                <Text style={styles.modalTitle}>{selectedService?.name} Booking</Text>
-
-                                <TextInput
-                                    placeholder="Pickup Location"
-                                    placeholderTextColor="white"
-                                    style={styles.input}
-                                    value={pickup}
-                                    onChangeText={setPickup}
-                                />
-                                <TextInput
-                                    placeholder="Drop Location"
-                                    placeholderTextColor="white"
-                                    style={styles.input}
-                                    value={drop}
-                                    onChangeText={setDrop}
-                                />
-                                <TextInput
-                                    placeholder="Truck Size (e.g., 14ft, 17ft)"
-                                    placeholderTextColor="white"
-                                    style={styles.input}
-                                    value={truckSize}
-                                    onChangeText={setTruckSize}
-                                />
-                                <TextInput
-                                    placeholder="Date & Time"
-                                    placeholderTextColor="white"
-                                    style={styles.input}
-                                    value={date}
-                                    onChangeText={setDate}
-                                />
-
-                                <TouchableOpacity style={styles.requestButton} onPress={handleRequest}>
-
-                                    <Text style={styles.requestText}>Request Truck</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.closeButton}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Text style={styles.closeText}>Cancel</Text>
-                                </TouchableOpacity>
-                            </ScrollView>
-                        </LinearGradient>
+            {/* Booking Confirmation Modal */}
+            {modalVisible && (
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Booking Confirmed</Text>
+                            <Text style={styles.modalText}>Driver: {bookingDetails?.driverName}</Text>
+                            <Text style={styles.modalText}>Vehicle: {bookingDetails?.vehicleModel}</Text>
+                            <Text style={styles.modalText}>Time: {bookingDetails?.time}</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                                <Text style={styles.closeButtonText}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            </Modal>
+                </Modal>
+            )}
         </LinearGradient>
     );
-}
+};
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    header: {
-        padding: 20,
+    container: {
+        flex: 1,
+        backgroundColor: '#ED2939',
+        paddingHorizontal: 20,
         paddingTop: 50,
     },
-    appTitle: { fontSize: 26, fontWeight: "bold", color: "white" },
-    tagline: { fontSize: 14, color: "#d1d5db", marginBottom: 15 },
-    searchBox: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "white",
-        borderRadius: 10,
-        paddingHorizontal: 10,
-        height: 40,
+    userInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 25,
     },
-    searchInput: { flex: 1, marginLeft: 5, color: "black" },
-    servicesContainer: { paddingHorizontal: 20, paddingTop: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: "bold", color: "white", marginBottom: 15 },
-    card: {
-        width: "48%",
-        aspectRatio: 1,
+    greeting: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    userImage: {
+        width: 45,
+        height: 45,
+        borderRadius: 25,
+    },
+    bookingQuestion: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 20,
+    },
+    gridItem: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    gridImage: {
+        width: '100%',
+        height: 200,
         borderRadius: 15,
-        overflow: "hidden",
-        elevation: 3,
+        resizeMode: 'cover',
     },
-    cardImageFull: { width: "100%", height: "100%", resizeMode: "cover" },
-    overlay: {
-        position: "absolute",
-        bottom: 0,
-        width: "100%",
-        backgroundColor: "rgba(0,0,0,0.5)",
-        paddingVertical: 8,
-        alignItems: "center",
+    scrollContainer: {
+        paddingBottom: 20,
     },
-    overlayText: { color: "white", fontSize: 16, fontWeight: "bold" },
-    banner: {
-        flexDirection: "row",
-        backgroundColor: "#000",
-        marginHorizontal: 20,
-        padding: 10,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    bannerText: { color: "white", fontSize: 16, fontWeight: "600", marginLeft: 10 },
-
-    // Modal
     modalContainer: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.6)",
-        justifyContent: "center",
-        alignItems: "center",
-        
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
-   modalContent: {
-    width: "100%",               // <-- make modal width 90% of screen
-    // backgroundColor: "#dbda8fff",
-    borderRadius: 40,
-    paddingVertical: 20,        // add padding inside modal
-    paddingHorizontal: 15,
-    elevation: 20,
-},
-
-
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+    },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "white",
-        marginBottom: 20,
-        textAlign: "center",
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
     },
-    input: {
-    width: "100%",           // full width inside the modal
-    alignSelf: "center",    // center inside modal
-    borderWidth: 1,
-    borderColor: "white",
-    borderRadius: 15,       // more rounded for premium feel
-    paddingVertical: 14,    // taller input
-    paddingHorizontal: 15,  // horizontal padding
-    marginBottom: 15,       // spacing between inputs
-    fontSize: 16,           // slightly bigger text
-    color: "#333",
-    backgroundColor: "rgba(255,255,255,0.2)", // subtle translucent background
-},
-
-    requestButton: {         
-    backgroundColor: "black",
-    alignItems: "center",
-    marginTop: 10,
-    borderRadius:20,
-    overflow: "hidden", 
-    paddingVertical: 12, 
-    left:50,
-    width: "60%"
-},
-    gradientButton: {
-        paddingVertical: 12,
-        borderRadius: 10,
-        alignItems: "center",
-        width: "100%"
-    },
-    requestText: {
-        color: "white",
-        fontWeight: "bold",
+    modalText: {
         fontSize: 16,
+        marginBottom: 10,
     },
-    closeButton: { marginTop: 15, alignItems: "center" },
-    closeText: { color: "gray", fontWeight: "600" },
+    closeButton: {
+        backgroundColor: '#ED2939',
+        paddingVertical: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    closeButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
 });
+
+export default Test;

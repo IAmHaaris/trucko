@@ -9,6 +9,7 @@ import SignUpScreen from "./src/screens/SignUpScreen";
 import MapScreen from "./src/screens/MapScreen";
 import { UserProvider } from './UserContext';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import List from "./src/screens/ListItem";
 
 import MainTabs from "./src/navigation/MainTabs";
 
@@ -26,6 +27,7 @@ export default function App() {
             <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
             <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="List" component={List} />
             <Stack.Screen name="MapScreen" component={MapScreen} />
           </Stack.Navigator>
 
